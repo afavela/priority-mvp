@@ -7,6 +7,9 @@ jobs:
   calculate-priority:
     runs-on: ubuntu-latest
     if: contains(github.event.issue.title, '[BUG]')  # Optional: Check if the title has a specific prefix
+    permissions:
+      issues: write
+      contents: read
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
