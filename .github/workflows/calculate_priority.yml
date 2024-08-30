@@ -1,11 +1,12 @@
-name: Calculate Issue Priority
+name: Calculate Issue Priority on New Issues
 on:
   issues:
-    types: [opened, edited]
+    types: [opened]  # This triggers the workflow when an issue is opened
 
 jobs:
   calculate-priority:
     runs-on: ubuntu-latest
+    if: contains(github.event.issue.title, '[BUG]')  # Optional: Check if the title has a specific prefix
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
