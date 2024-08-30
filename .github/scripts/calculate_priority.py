@@ -11,30 +11,32 @@ token = os.getenv('GITHUB_TOKEN')
 repo_info = os.getenv('GITHUB_REPOSITORY').split('/')
 owner = repo_info[0]
 repo = repo_info[1]
-headers = {'Authorization': f'token {token}'}
+headers = {'Authorization': f'token {token}', 'Accept': 'application/vnd.github.v3+json'}
 
-# Fetch issue details
-url = f'https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}'
-response = requests.get(url, headers=headers)
-issue_data = response.json()
-
-# Debug output to check what the issue data contains
-print(json.dumps(issue_data, indent=4))
-
-# Check if 'body' is in the issue data and handle it
-issue_body = issue_data.get('body', 'No description provided.')
-
-# Extract values from issue_data if your form results are in comments or the body as markdown
-# You might need to adjust this part based on how the data is actually structured in the issue
+# Calculate priority score
 severity = 'Low'  # Placeholder, adjust as necessary
 impact = 'High'   # Placeholder, adjust as necessary
-
-# Calculate priority
 severity_score = convert_to_score(severity)
 impact_score = convert_to_score(impact)
-priority = (severity_score + impact_score) / 2
+priority_score = (severity_score + impact_score) / 2
+priority_label = f'Priority: {priority_score}'
 
-# Optionally, update the issue (this is just a placeholder example)
-update_url = f'https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}'
-update_data = {'body': issue_body + f'\n\nPriority Score: {priority}'}
-response = requests.patch(update_url, headers=headers, json=update_data)
+# Check if label exists
+labels_url = f'https://api.github.com/repos/{owner}/{repo}/labels'
+response = requests.get(labels_url, headers=headers)
+labels = response.json()
+label_names = [label['name'] for label in labels]
+
+# Create label if it doesn't exist
+if priority_label not in label_names:
+    create_label_data = {
+        'name': priority_label,
+        'color': 'f29513',  # You can customize the label color
+        'description': 'Automatically calculated priority score'
+    }
+    requests.post(labels_url, headers=headers, json=create_label_data)
+
+# Apply the label to the issue
+issue_labels_url = f'https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}/labels'
+apply_label_data = {'labels': [priority_label]}
+response = requests.post(issue_labels_url, headers=headers, json=apply_label_data)
