@@ -22,13 +22,3 @@ body:
       placeholder: Describe the bug...
     validations:
       required: true
-  - type: checkboxes
-    id: confirm
-    attributes:
-      label: Confirmations
-      description: Please confirm the following:
-      options:
-        - label: I have searched the existing issues
-          required: true
-        - label: This is a complete report with replication steps
-          required: true
