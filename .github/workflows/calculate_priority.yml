@@ -16,8 +16,12 @@ jobs:
         with:
           python-version: '3.x'
       
+      - name: Install dependencies
+        run: pip install requests
+      
       - name: Calculate priority
         run: python .github/scripts/calculate_priority.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
+
