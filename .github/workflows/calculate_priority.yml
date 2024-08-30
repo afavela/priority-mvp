@@ -1,0 +1,22 @@
+name: Calculate Issue Priority
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  calculate-priority:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      
+      - name: Calculate priority
+        run: python calculate_priority.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
