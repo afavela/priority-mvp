@@ -25,7 +25,7 @@ jobs:
         run: pip install requests
       
       - name: Calculate and update priority
-        run: python .github/scripts/update_priority.py
+        run: python .github/scripts/calculate_priority.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
