@@ -11,28 +11,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Calculate score
-        id: score-calculator
-        run: |
-          # Map text options to scores
-          declare -A scores=(["Low"]=1 ["Medium"]=2 ["High"]=3 ["Critical"]=4)
-
-          # Extract selections from the issue body
-          severity=$(jq --raw-output '.issue.body | .[] | select(.id=="severity") | .value' $GITHUB_EVENT_PATH)
-          business_impact=$(jq --raw-output '.issue.body | .[] | select(.id=="business-impact") | .value' $GITHUB_EVENT_PATH)
-
-          # Calculate average score
-          severity_score=${scores[$severity]}
-          business_impact_score=${scores[$business_impact]}
-          average_score=$(( (severity_score + business_impact_score) / 2 ))
-
-          # Set the output
-          echo "::set-output name=average_score::$average_score"
-
-      - name: Update GitHub Project field
-        uses: some-action/update-project-field@v1
+      - name: Set up Python
+        uses: actions/setup-python@v2
         with:
-          project-id: "PVT_kwHOARXQmM4AnIAT"
-          field-id: "PVTF_lAHOARXQmM4AnIATzge6Yn8"
-          issue-number: ${{ github.event.issue.number }}
-          score: ${{ steps.score-calculator.outputs.average_score }}
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Calculate score and update project field
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python .github/scripts/update_score.py
