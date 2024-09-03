@@ -1,0 +1,37 @@
+name: Bug Report
+description: File a bug report
+title: "[BUG] "
+labels: Bug
+body:
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: Select the severity of the bug.
+      options:
+        - Low
+        - Medium
+        - High
+        - Critical
+    validations:
+      required: true
+  - type: dropdown
+    id: business-impact
+    attributes:
+      label: Business Impact
+      description: Select the business impact of the bug.
+      options:
+        - Low
+        - Medium
+        - High
+        - Critical
+    validations:
+      required: true
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Bug Description
+      description: Please describe the bug you are experiencing.
+      placeholder: Describe the bug...
+    validations:
+      required: true
