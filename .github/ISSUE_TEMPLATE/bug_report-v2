@@ -1,80 +1,37 @@
-name: Issue Score Labeler
-
-on:
-  issues:
-    types: [opened]
-
-jobs:
-  calculate_and_label:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Extract issue data
-        id: extract_data
-        run: |
-          # Extract the severity and business impact from the issue body using grep or similar command
-          SEVERITY=$(echo "${{ github.event.issue.body }}" | grep -oP '(?<=\*\*Severity:\*\* ).*')
-          BUSINESS_IMPACT=$(echo "${{ github.event.issue.body }}" | grep -oP '(?<=\*\*Business Impact:\*\* ).*')
-
-          echo "Severity: $SEVERITY"
-          echo "Business Impact: $BUSINESS_IMPACT"
-
-          # Set the values as outputs for later steps
-          echo "severity=$SEVERITY" >> $GITHUB_ENV
-          echo "business_impact=$BUSINESS_IMPACT" >> $GITHUB_ENV
-
-      - name: Calculate Score
-        id: calculate_score
-        run: |
-          function calculate_score() {
-            local severity=$1
-            local business_impact=$2
-            local score=0
-
-            # Scoring logic
-            case $severity in
-              "Low") score=$((score + 1)) ;;
-              "Medium") score=$((score + 2)) ;;
-              "High") score=$((score + 3)) ;;
-              "Critical") score=$((score + 4)) ;;
-            esac
-
-            case $business_impact in
-              "Low") score=$((score + 1)) ;;
-              "Medium") score=$((score + 2)) ;;
-              "High") score=$((score + 3)) ;;
-              "Critical") score=$((score + 4)) ;;
-            esac
-
-            echo $score
-          }
-
-          # Calculate the score using extracted values
-          SCORE=$(calculate_score "${{ env.severity }}" "${{ env.business_impact }}")
-          echo "Calculated Score: $SCORE"
-
-          # Set the score as an output for later steps
-          echo "score=$SCORE" >> $GITHUB_ENV
-
-      - name: Determine Label
-        id: determine_label
-        run: |
-          # Determine label based on score
-          LABEL=""
-          case ${{ env.score }} in
-            2) LABEL="Low" ;;
-            3|4) LABEL="Medium" ;;
-            5|6) LABEL="High" ;;
-            7|8) LABEL="Critical" ;;
-            *) LABEL="Needs Assessment" ;;
-          esac
-
-          echo "Label: $LABEL"
-          echo "label=$LABEL" >> $GITHUB_ENV
-
-      - name: Apply Label to Issue
-        uses: actions-ecosystem/action-add-labels@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          labels: ${{ env.label }}
-          issue_number: ${{ github.event.issue.number }}
+name: Bug Report
+description: File a bug report
+title: "[BUG] "
+labels: Bug
+body:
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: Select the severity of the bug.
+      options:
+        - Low
+        - Medium
+        - High
+        - Critical
+    validations:
+      required: true
+  - type: dropdown
+    id: business-impact
+    attributes:
+      label: Business Impact
+      description: Select the business impact of the bug.
+      options:
+        - Low
+        - Medium
+        - High
+        - Critical
+    validations:
+      required: true
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Bug Description
+      description: Please describe the bug you are experiencing.
+      placeholder: Describe the bug...
+    validations:
+      required: true
