@@ -3,13 +3,10 @@ import requests
 import json
 
 def fetch_issue_details():
-    # Path to the event JSON file
     event_path = os.getenv('GITHUB_EVENT_PATH')
-    # Read the event JSON file
     with open(event_path, 'r') as file:
         event_data = json.load(file)
     
-    # Extract the issue API URL from the event data
     issue_url = event_data['issue']['url']
     
     headers = {
@@ -17,7 +14,6 @@ def fetch_issue_details():
         "Accept": "application/vnd.github+json"
     }
     
-    print("Fetching issue details from URL:", issue_url)
     response = requests.get(issue_url, headers=headers)
     if response.status_code == 200:
         return response.json()
@@ -26,12 +22,45 @@ def fetch_issue_details():
         return None
 
 def calculate_score_based_on_issue(issue):
-    # Dummy function for example
-    # Replace with your own logic based on issue content
     print("Calculating score for issue number:", issue['number'])
-    return 3  # Sample score
+    return 3  # Sample score, replace with actual logic
 
-def update_project_field(issue_number, score):
+def fetch_item_id_for_issue(project_id, issue_number):
+    query_url = 'https://api.github.com/graphql'
+    headers = {
+        "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
+        "Content-Type": "application/json"
+    }
+    query = """
+    query GetProjectItems($projectId: ID!) {
+      node(id: $projectId) {
+        ... on ProjectV2 {
+          items(first: 100) {
+            nodes {
+              id
+              content {
+                ... on Issue {
+                  number
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+    variables = {"projectId": project_id}
+    response = requests.post(query_url, headers=headers, json={'query': query, 'variables': variables})
+    if response.status_code == 200:
+        data = response.json()
+        for item in data['data']['node']['items']['nodes']:
+            if 'content' in item and item['content'].get('number') == issue_number:
+                return item['id']  # Return the itemId of the matched issue
+    else:
+        print(f"Failed to fetch project items: {response.status_code} {response.text}")
+    return None  # Return None if no match found
+
+def update_project_field(item_id, field_id, score):
     query_url = 'https://api.github.com/graphql'
     headers = {
         "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
@@ -47,12 +76,11 @@ def update_project_field(issue_number, score):
     variables = {
         "input": {
             "projectId": "PVT_kwHOARXQmM4AnIAT",
-            "fieldId": "PVTF_lAHOARXQmM4AnIATzge6Yn8",
+            "fieldId": field_id,
             "value": str(score),
-            "itemId": f"ITEM_ID_FOR_{issue_number}"  # Adjust this based on how you correlate items and issues
+            "itemId": item_id
         }
     }
-    print(f"Updating project field for issue number {issue_number} with score {score}")
     response = requests.post(query_url, headers=headers, json={'query': query, 'variables': variables})
     if response.status_code == 200:
         print("Field updated successfully.")
@@ -63,7 +91,11 @@ def main():
     issue_details = fetch_issue_details()
     if issue_details:
         score = calculate_score_based_on_issue(issue_details)
-        update_project_field(issue_details['number'], score)
+        item_id = fetch_item_id_for_issue("PVT_kwHOARXQmM4AnIAT", issue_details['number'])
+        if item_id:
+            update_project_field(item_id, "PVTF_lAHOARXQmM4AnIATzge6Yn8", score)
+        else:
+            print("No matching item found for the issue in the project.")
 
 if __name__ == '__main__':
     main()
