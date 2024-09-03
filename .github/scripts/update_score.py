@@ -17,6 +17,7 @@ def fetch_issue_details():
         "Accept": "application/vnd.github+json"
     }
     
+    print("Fetching issue details from URL:", issue_url)
     response = requests.get(issue_url, headers=headers)
     if response.status_code == 200:
         return response.json()
@@ -27,6 +28,7 @@ def fetch_issue_details():
 def calculate_score_based_on_issue(issue):
     # Dummy function for example
     # Replace with your own logic based on issue content
+    print("Calculating score for issue number:", issue['number'])
     return 3  # Sample score
 
 def update_project_field(issue_number, score):
@@ -50,6 +52,7 @@ def update_project_field(issue_number, score):
             "itemId": f"ITEM_ID_FOR_{issue_number}"  # Adjust this based on how you correlate items and issues
         }
     }
+    print(f"Updating project field for issue number {issue_number} with score {score}")
     response = requests.post(query_url, headers=headers, json={'query': query, 'variables': variables})
     if response.status_code == 200:
         print("Field updated successfully.")
