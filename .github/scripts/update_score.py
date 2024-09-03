@@ -1,18 +1,33 @@
-import requests
 import os
+import requests
 import json
 
-def fetch_issue_details(issue_url):
+def fetch_issue_details():
+    # Path to the event JSON file
+    event_path = os.getenv('GITHUB_EVENT_PATH')
+    # Read the event JSON file
+    with open(event_path, 'r') as file:
+        event_data = json.load(file)
+    
+    # Extract the issue API URL from the event data
+    issue_url = event_data['issue']['url']
+    
     headers = {
         "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
         "Accept": "application/vnd.github+json"
     }
+    
     response = requests.get(issue_url, headers=headers)
     if response.status_code == 200:
         return response.json()
     else:
         print(f"Failed to fetch issue details: {response.status_code} {response.text}")
         return None
+
+def calculate_score_based_on_issue(issue):
+    # Dummy function for example
+    # Replace with your own logic based on issue content
+    return 3  # Sample score
 
 def update_project_field(issue_number, score):
     query_url = 'https://api.github.com/graphql'
@@ -42,11 +57,9 @@ def update_project_field(issue_number, score):
         print(f"Failed to update project field: {response.status_code} {response.text}")
 
 def main():
-    issue_url = "URL_TO_FETCH_ISSUE"  # Adjust this based on your specific needs
-    issue_details = fetch_issue_details(issue_url)
+    issue_details = fetch_issue_details()
     if issue_details:
-        # Extract needed details and calculate score
-        score = calculate_score_based_on_issue(issue_details)  # Define this function based on your scoring logic
+        score = calculate_score_based_on_issue(issue_details)
         update_project_field(issue_details['number'], score)
 
 if __name__ == '__main__':
