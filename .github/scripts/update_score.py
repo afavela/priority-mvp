@@ -5,8 +5,22 @@ import os
 def get_issue_details():
     issue_url = os.getenv('GITHUB_EVENT_PATH')
     with open(issue_url, 'r') as file:
-        data = json.load(file)
-    return data['issue']
+        event_data = json.load(file)
+    issue_api_url = event_data['issue']['url']
+    headers = {
+        "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
+        "Accept": "application/vnd.github+json"
+    }
+    response = requests.get(issue_api_url, headers=headers)
+    issue_details = response.json()
+    return issue_details
+
+def extract_dropdown_value(body, identifier):
+    lines = body.split('\n')
+    for line in lines:
+        if identifier in line:
+            return line.split(':')[1].strip()
+    return None
 
 def map_severity_to_score(value):
     mapping = {
@@ -38,8 +52,9 @@ def update_project_field(issue_number, score):
 
 def main():
     issue = get_issue_details()
-    severity = issue['body']['severity']
-    impact = issue['body']['business-impact']
+    body = issue['body']
+    severity = extract_dropdown_value(body, 'severity')
+    impact = extract_dropdown_value(body, 'business-impact')
     score = calculate_average_score(severity, impact)
     update_project_field(issue['number'], score)
 
