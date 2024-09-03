@@ -53,15 +53,17 @@ def fetch_item_id_for_issue(project_id, issue_number):
     response = requests.post(query_url, headers=headers, json={'query': query, 'variables': variables})
     if response.status_code == 200:
         data = response.json()
-        if data.get('data') and data['data'].get('node'):
+        if data.get('data') and data['data'].get('node') and data['data']['node'].get('items'):
             for item in data['data']['node']['items']['nodes']:
                 if 'content' in item and item['content'].get('number') == issue_number:
                     return item['id']
         else:
             print("No data or node found in GraphQL response.")
+            print("Response:", json.dumps(data, indent=4))  # More detailed logging
     else:
         print(f"Failed to fetch project items: {response.status_code} {response.text}")
     return None
+
 
 def update_project_field(item_id, field_id, score):
     query_url = 'https://api.github.com/graphql'
