@@ -1,62 +1,53 @@
-import json
 import requests
 import os
+import json
 
-def get_issue_details():
-    issue_url = os.getenv('GITHUB_EVENT_PATH')
-    with open(issue_url, 'r') as file:
-        event_data = json.load(file)
-    issue_api_url = event_data['issue']['url']
+def fetch_issue_details(issue_url):
     headers = {
         "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
         "Accept": "application/vnd.github+json"
     }
-    response = requests.get(issue_api_url, headers=headers)
-    issue_details = response.json()
-    return issue_details
-
-def extract_dropdown_value(body, identifier):
-    lines = body.split('\n')
-    for line in lines:
-        if identifier in line:
-            return line.split(':')[1].strip()
-    return None
-
-def map_severity_to_score(value):
-    mapping = {
-        "Low": 1,
-        "Medium": 2,
-        "High": 3,
-        "Critical": 4
-    }
-    return mapping.get(value, 0)
-
-def calculate_average_score(severity, impact):
-    severity_score = map_severity_to_score(severity)
-    impact_score = map_severity_to_score(impact)
-    return (severity_score + impact_score) / 2
+    response = requests.get(issue_url, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Failed to fetch issue details: {response.status_code} {response.text}")
+        return None
 
 def update_project_field(issue_number, score):
+    query_url = 'https://api.github.com/graphql'
     headers = {
         "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
-        "Accept": "application/vnd.github.v3+json"
+        "Content-Type": "application/json"
     }
-    project_field_payload = {
-        "project_id": "PVT_kwHOARXQmM4AnIAT",
-        "field_id": "PVTF_lAHOARXQmM4AnIATzge6Yn8",
-        "issue_number": issue_number,
-        "value": score
+    query = """
+    mutation ($input: UpdateProjectV2ItemFieldValueInput!) {
+      updateProjectV2ItemFieldValue(input: $input) {
+        clientMutationId
+      }
     }
-    response = requests.post('https://api.github.com/projects/update-field', json=project_field_payload, headers=headers)
-    print(response.status_code, response.json())
+    """
+    variables = {
+        "input": {
+            "projectId": "PVT_kwHOARXQmM4AnIAT",
+            "fieldId": "PVTF_lAHOARXQmM4AnIATzge6Yn8",
+            "value": str(score),
+            "itemId": f"ITEM_ID_FOR_{issue_number}"  # Adjust this based on how you correlate items and issues
+        }
+    }
+    response = requests.post(query_url, headers=headers, json={'query': query, 'variables': variables})
+    if response.status_code == 200:
+        print("Field updated successfully.")
+    else:
+        print(f"Failed to update project field: {response.status_code} {response.text}")
 
 def main():
-    issue = get_issue_details()
-    body = issue['body']
-    severity = extract_dropdown_value(body, 'severity')
-    impact = extract_dropdown_value(body, 'business-impact')
-    score = calculate_average_score(severity, impact)
-    update_project_field(issue['number'], score)
+    issue_url = "URL_TO_FETCH_ISSUE"  # Adjust this based on your specific needs
+    issue_details = fetch_issue_details(issue_url)
+    if issue_details:
+        # Extract needed details and calculate score
+        score = calculate_score_based_on_issue(issue_details)  # Define this function based on your scoring logic
+        update_project_field(issue_details['number'], score)
 
 if __name__ == '__main__':
     main()
