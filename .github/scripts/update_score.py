@@ -24,6 +24,8 @@ def fetch_issue_details():
         print(f"Failed to fetch issue details: {response.status_code} {response.text}")
         return None
 
+import json
+
 def calculate_score_based_on_issue(issue):
     # Maps for severity and business impact with lowercase keys
     severity_scores = {
@@ -39,9 +41,18 @@ def calculate_score_based_on_issue(issue):
         "critical": 4
     }
 
-    # Extract severity and impact from the issue body. Adjust parsing logic as needed.
-    severity = issue.get('severity', 'low').lower()  # Defaulting to 'low' and normalizing to lowercase
-    impact = issue.get('impact', 'low').lower()  # Defaulting to 'low' and normalizing to lowercase
+    # Log the entire issue payload for debugging
+    print("Complete Issue Payload:")
+    print(json.dumps(issue, indent=4))
+
+    # Assuming the issue details are nested and need to be parsed differently
+    # Example parsing logic (might need adjustment based on actual structure)
+    severity = next((item['value'] for item in issue['body'] if item['id'] == 'severity'), 'low').lower()
+    impact = next((item['value'] for item in issue['body'] if item['id'] == 'impact'), 'low').lower()
+
+    # Log the extracted values
+    print(f"Extracted Severity: {severity}")
+    print(f"Extracted Impact: {impact}")
 
     # Calculate the scores using the dictionaries
     severity_score = severity_scores.get(severity, 1)  # Default to 1 if not found
@@ -50,11 +61,11 @@ def calculate_score_based_on_issue(issue):
     # Calculate average score and ensure it's an integer for GraphQL compatibility
     average_score = (severity_score + impact_score) / 2
 
-    print(f"Severity: {severity}, Score: {severity_score}")
-    print(f"Impact: {impact}, Score: {impact_score}")
+    print(f"Severity Score: {severity_score}, Impact Score: {impact_score}")
     print(f"Calculated average score: {average_score}")
 
     return average_score
+
 
 
 
