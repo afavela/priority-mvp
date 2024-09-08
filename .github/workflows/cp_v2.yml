@@ -23,5 +23,5 @@ jobs:
 
       - name: Calculate score and update project field
         env:
-          GITHUB_TOKEN: ${{ secrets.PRI_MPV }}
+          GITHUB_TOKEN: ${{ secrets.PRI_MVP_CLASSIC }}
         run: python .github/scripts/update_score.py
