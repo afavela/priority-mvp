@@ -25,37 +25,37 @@ def fetch_issue_details():
         return None
 
 def calculate_score_based_on_issue(issue):
-    # Maps for severity and business impact
+    # Maps for severity and business impact with lowercase keys
     severity_scores = {
-        "Low": 1,
-        "Medium": 2,
-        "High": 3,
-        "Critical": 4
+        "low": 1,
+        "medium": 2,
+        "high": 3,
+        "critical": 4
     }
-    business_impact_scores = {
-        "Low": 1,
-        "Medium": 2,
-        "High": 3,
-        "Critical": 4
+    impact_scores = {
+        "low": 1,
+        "medium": 2,
+        "high": 3,
+        "critical": 4
     }
 
-    # Assuming the issue body is parsed into a dictionary-like structure
-    # These keys might need adjustment depending on the exact structure of the JSON
-    severity = issue.get('severity', 'Low')  # Defaulting to 'Low' if not found
-    business_impact = issue.get('business-impact', 'Low')  # Defaulting to 'Low' if not found
+    # Extract severity and impact from the issue body. Adjust parsing logic as needed.
+    severity = issue.get('severity', 'low').lower()  # Defaulting to 'low' and normalizing to lowercase
+    impact = issue.get('impact', 'low').lower()  # Defaulting to 'low' and normalizing to lowercase
 
-    # Calculate the scores
+    # Calculate the scores using the dictionaries
     severity_score = severity_scores.get(severity, 1)  # Default to 1 if not found
-    business_impact_score = business_impact_scores.get(business_impact, 1)  # Default to 1 if not found
+    impact_score = impact_scores.get(impact, 1)  # Default to 1 if not found
 
-    # Calculate average score
-    average_score = (severity_score + business_impact_score) / 2
+    # Calculate average score and ensure it's an integer for GraphQL compatibility
+    average_score = (severity_score + impact_score) / 2
 
     print(f"Severity: {severity}, Score: {severity_score}")
-    print(f"Business Impact: {business_impact}, Score: {business_impact_score}")
+    print(f"Impact: {impact}, Score: {impact_score}")
     print(f"Calculated average score: {average_score}")
 
     return average_score
+
 
 
 def fetch_item_id_for_issue(project_id, issue_number):
