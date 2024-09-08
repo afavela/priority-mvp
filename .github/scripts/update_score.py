@@ -85,7 +85,7 @@ def update_project_field(item_id, field_id, score):
         "input": {
             "projectId": "PVT_kwHOARXQmM4AnIAT",
             "fieldId": field_id,
-            "value": str(score),
+            "value": {"number": score},  # Note the change here to match the curl command structure
             "itemId": item_id
         }
     }
