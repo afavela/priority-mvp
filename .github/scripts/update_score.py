@@ -25,10 +25,38 @@ def fetch_issue_details():
         return None
 
 def calculate_score_based_on_issue(issue):
-    # Example of expanding logging with more issue details
-    print(f"Calculating score for issue number: {issue['number']}")
-    print(f"Issue Labels: {[label['name'] for label in issue.get('labels', [])]}")
-    return 3  # Sample score, replace with actual logic
+    # Maps for severity and business impact
+    severity_scores = {
+        "Low": 1,
+        "Medium": 2,
+        "High": 3,
+        "Critical": 4
+    }
+    business_impact_scores = {
+        "Low": 1,
+        "Medium": 2,
+        "High": 3,
+        "Critical": 4
+    }
+
+    # Assuming the issue body is parsed into a dictionary-like structure
+    # These keys might need adjustment depending on the exact structure of the JSON
+    severity = issue.get('severity', 'Low')  # Defaulting to 'Low' if not found
+    business_impact = issue.get('business-impact', 'Low')  # Defaulting to 'Low' if not found
+
+    # Calculate the scores
+    severity_score = severity_scores.get(severity, 1)  # Default to 1 if not found
+    business_impact_score = business_impact_scores.get(business_impact, 1)  # Default to 1 if not found
+
+    # Calculate average score
+    average_score = (severity_score + business_impact_score) / 2
+
+    print(f"Severity: {severity}, Score: {severity_score}")
+    print(f"Business Impact: {business_impact}, Score: {business_impact_score}")
+    print(f"Calculated average score: {average_score}")
+
+    return average_score
+
 
 def fetch_item_id_for_issue(project_id, issue_number):
     query_url = 'https://api.github.com/graphql'
@@ -81,17 +109,19 @@ def update_project_field(item_id, field_id, score):
       }
     }
     """
+    # Ensure score is passed as an integer and formatted as expected
+    formatted_score = {"number": int(round(score))}  # Round and convert to integer
     variables = {
         "input": {
             "projectId": "PVT_kwHOARXQmM4AnIAT",
             "fieldId": field_id,
-            "value": {"number": score},  # Note the change here to match the curl command structure
+            "value": formatted_score,
             "itemId": item_id
         }
     }
     response = requests.post(query_url, headers=headers, json={'query': query, 'variables': variables})
     if response.status_code == 200:
-        print(f"Field updated successfully for Item ID: {item_id}, Score set: {score}")
+        print(f"Field updated successfully for Item ID: {item_id}, Score set: {formatted_score}")
     else:
         print(f"Failed to update project field: {response.status_code} {response.text}")
 
