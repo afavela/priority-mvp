@@ -41,18 +41,10 @@ def calculate_score_based_on_issue(issue):
         "critical": 4
     }
 
-    # Log the entire issue payload for debugging
-    print("Complete Issue Payload:")
-    print(json.dumps(issue, indent=4))
-
-    # Assuming the issue details are nested and need to be parsed differently
-    # Example parsing logic (might need adjustment based on actual structure)
-    severity = next((item['value'] for item in issue['body'] if item['id'] == 'severity'), 'low').lower()
-    impact = next((item['value'] for item in issue['body'] if item['id'] == 'impact'), 'low').lower()
-
-    # Log the extracted values
-    print(f"Extracted Severity: {severity}")
-    print(f"Extracted Impact: {impact}")
+    # Extract the severity and impact from the issue body string
+    body = issue.get('body', '').lower()
+    severity = extract_value_from_body(body, 'severity')
+    impact = extract_value_from_body(body, 'impact')
 
     # Calculate the scores using the dictionaries
     severity_score = severity_scores.get(severity, 1)  # Default to 1 if not found
@@ -61,10 +53,28 @@ def calculate_score_based_on_issue(issue):
     # Calculate average score and ensure it's an integer for GraphQL compatibility
     average_score = (severity_score + impact_score) / 2
 
-    print(f"Severity Score: {severity_score}, Impact Score: {impact_score}")
+    print(f"Extracted Severity: {severity}, Severity Score: {severity_score}")
+    print(f"Extracted Impact: {impact}, Impact Score: {impact_score}")
     print(f"Calculated average score: {average_score}")
 
     return average_score
+
+def extract_value_from_body(body, key):
+    """
+    A helper function to extract values from the given markdown-like body string.
+    Assumes the format '### key\n\nValue\n\n'
+    """
+    try:
+        # Split the body by lines and find the line containing the key
+        lines = body.split('\n')
+        for i, line in enumerate(lines):
+            if line.strip().lower() == f"### {key}":
+                # Return the value after the key line, trimming spaces and newlines
+                return lines[i + 2].strip()
+    except Exception as e:
+        print(f"Error extracting {key}: {e}")
+    return 'low'  # default if not found or on error
+
 
 
 
