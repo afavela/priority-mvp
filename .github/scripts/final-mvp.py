@@ -40,9 +40,10 @@ def parse_issue_body(body):
         if not line:
             i += 1
             continue
-        # If the line ends with a question mark or colon, consider it a question
-        if line.endswith('?') or line.endswith(':'):
-            current_question = line
+        # If the line starts with '### ', consider it a question
+        if line.startswith('### '):
+            # Remove '### ' and any leading '#' characters from the question
+            current_question = line.lstrip('#').strip()
             # Collect the answer from the next non-empty line
             answer = ''
             i += 1
