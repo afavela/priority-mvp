@@ -130,8 +130,8 @@ def update_project_field(item_id, field_id, score):
       }
     }
     """
-    # Ensure score is passed as an integer and formatted as expected
-    formatted_score = {"number": int(round(score))}  # Round and convert to integer
+    # Ensure score is passed as a floating-point number
+    formatted_score = {"number": round(score, 2)}  # Round to two decimal places if needed
     variables = {
         "input": {
             "projectId": "PVT_kwHOARXQmM4AnIAT",
