@@ -1,7 +1,6 @@
 import os
 import requests
 import json
-import re
 
 def normalize_string(s):
     return s.strip().lower()
@@ -28,11 +27,38 @@ def fetch_issue_details():
         print(f"Failed to fetch issue details: {response.status_code} {response.text}")
         return None
 
+def parse_issue_body(body):
+    """
+    Parses the issue body into a dictionary of questions and answers.
+    """
+    lines = body.split('\n')
+    q_and_a = {}
+    current_question = None
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if not line:
+            i += 1
+            continue
+        # If the line ends with a question mark or colon, consider it a question
+        if line.endswith('?') or line.endswith(':'):
+            current_question = line
+            # Collect the answer from the next non-empty line
+            answer = ''
+            i += 1
+            while i < len(lines):
+                next_line = lines[i].strip()
+                if next_line:
+                    answer = next_line
+                    break
+                i += 1
+            q_and_a[current_question] = answer
+        else:
+            i += 1
+    return q_and_a
+
 def calculate_score_based_on_issue(issue):
     # Define the score mappings and multipliers
-    def normalize_string(s):
-        return s.strip().lower()
-    
     score_mappings = {
         "risk": {
             normalize_string("High"): 5,
@@ -66,10 +92,25 @@ def calculate_score_based_on_issue(issue):
     
     # Extract dropdown values from the issue body
     body = issue.get('body', '')
-    risk = normalize_string(extract_value_from_body(body, 'perceived combined risk to the company reputation and revenue'))
-    productivity = normalize_string(extract_value_from_body(body, 'what level of efficiency is gained as a result of completion'))
-    timeline = normalize_string(extract_value_from_body(body, 'when do you need/want this request completed by'))
-    dependency = normalize_string(extract_value_from_body(body, 'how dependent is this request on eng for completion'))
+    print(f"Issue Body:\n{body}\n")
+    q_and_a = parse_issue_body(body)
+    # For debugging, print the parsed questions and answers
+    print("Parsed Questions and Answers:")
+    for question, answer in q_and_a.items():
+        print(f"Question: {question}\nAnswer: {answer}\n")
+
+    # Map the questions to the keys
+    key_mapping = {
+        "risk": "Perceived combined risk to the company reputation and revenue?",
+        "productivity": "What level of efficiency is gained as a result of completion?",
+        "timeline": "When do you need/want this request completed by?",
+        "dependency": "How dependent is this request on Eng for completion?"
+    }
+
+    risk = normalize_string(q_and_a.get(key_mapping['risk'], ''))
+    productivity = normalize_string(q_and_a.get(key_mapping['productivity'], ''))
+    timeline = normalize_string(q_and_a.get(key_mapping['timeline'], ''))
+    dependency = normalize_string(q_and_a.get(key_mapping['dependency'], ''))
 
     # Log extracted values
     print(f"Extracted values - Risk: '{risk}', Productivity: '{productivity}', Timeline: '{timeline}', Dependency: '{dependency}'")
@@ -93,29 +134,6 @@ def calculate_score_based_on_issue(issue):
 
     print(f"Calculated total score: {total_score}")
     return total_score
-
-def extract_value_from_body(body, key):
-    """
-    Extracts the answer corresponding to a question (key) in the issue body.
-    """
-    # Remove markdown headers and formatting
-    body = re.sub(r'^#+\s*', '', body, flags=re.MULTILINE)
-    
-    # Split the body into sections
-    sections = re.split(r'\n\n', body)
-    key = normalize_string(key)
-
-    for section in sections:
-        lines = section.strip().split('\n')
-        if lines:
-            question = normalize_string(lines[0])
-            if key in question:
-                # Return the first non-empty line after the question
-                for answer_line in lines[1:]:
-                    answer_line = answer_line.strip()
-                    if answer_line:
-                        return answer_line.lower()
-    return ''
 
 def fetch_item_id_for_issue(project_id, issue_number):
     query_url = 'https://api.github.com/graphql'
@@ -187,17 +205,4 @@ def update_project_field(item_id, field_id, score):
         print(f"Failed to update project field: {response.status_code} {response.text}")
 
 def main():
-    issue_details = fetch_issue_details()
-    if issue_details:
-        score = calculate_score_based_on_issue(issue_details)
-        if score > 0:
-            item_id = fetch_item_id_for_issue("PVT_kwHOARXQmM4AnIAT", issue_details['number'])
-            if item_id:
-                update_project_field(item_id, "PVTF_lAHOARXQmM4AnIATzge6Yn8", score)
-            else:
-                print("No matching item found for the issue in the project.")
-        else:
-            print("Score calculation failed due to missing or invalid data.")
-
-if __name__ == '__main__':
-    main()
+    issue_details = 
