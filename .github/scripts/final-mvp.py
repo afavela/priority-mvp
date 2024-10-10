@@ -27,17 +27,17 @@ def fetch_issue_details():
 def calculate_score_based_on_issue(issue):
     # Define the score mappings and multipliers based on the image
     score_mappings = {
-        "risk": {"High": 5, "Medium": 3, "Low": 1},
-        "productivity": {"Major": 5, "Minor": 3, "Minimal": 1, "Maintenance": 1},
+        "risk": {"high": 5, "medium": 3, "low": 1},
+        "productivity": {"major": 5, "minor": 3, "minimal": 1, "maintenance": 1},
         "timeline": {
-            "Immediate: within the current monthly sprint": 5,
-            "Near Term: within the next monthly sprint": 3,
-            "Longer Term: to be picked up from the backlog based on prioritization": 1
+            "immediate: within the current monthly sprint": 5,
+            "near term: within the next monthly sprint": 3,
+            "longer term: to be picked up from the backlog based on prioritization": 1
         },
         "dependency": {
-            "Solely Dependent": 5,
-            "Could be worked around but would be less efficient": 3,
-            "Would be nice to have but not entirely dependent": 1
+            "solely dependent": 5,
+            "could be worked around but would be less efficient": 3,
+            "would be nice to have but not entirely dependent": 1
         }
     }
     
@@ -50,10 +50,10 @@ def calculate_score_based_on_issue(issue):
     
     # Extract dropdown values from the issue body
     body = issue.get('body', '').lower()
-    risk = extract_value_from_body(body, 'risk')
-    productivity = extract_value_from_body(body, 'productivity')
-    timeline = extract_value_from_body(body, 'timeline')
-    dependency = extract_value_from_body(body, 'dependency')
+    risk = extract_value_from_body(body, 'perceived combined risk to the company reputation and revenue')
+    productivity = extract_value_from_body(body, 'what level of efficiency is gained as a result of completion')
+    timeline = extract_value_from_body(body, 'when do you need/want this request completed by')
+    dependency = extract_value_from_body(body, 'how dependent is this request on eng for completion')
     
     # Calculate the total score
     total_score = (
@@ -75,9 +75,9 @@ def extract_value_from_body(body, key):
         # Split the body by lines and find the line containing the key
         lines = body.split('\n')
         for i, line in enumerate(lines):
-            if line.strip().lower() == f"### {key}":
+            if key in line.strip().lower():
                 # Return the value after the key line, trimming spaces and newlines
-                return lines[i + 2].strip()
+                return lines[i + 1].strip()
     except Exception as e:
         print(f"Error extracting {key}: {e}")
     return 'low'  # default if not found or on error
