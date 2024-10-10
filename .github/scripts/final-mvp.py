@@ -198,16 +198,55 @@ def update_project_field(item_id, field_id, score):
     else:
         print(f"Failed to update project field: {response.status_code} {response.text}")
 
+def add_issue_to_project(issue_node_id, project_id):
+    mutation = """
+    mutation AddIssueToProject($projectId: ID!, $contentId: ID!) {
+      addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
+        item {
+          id
+        }
+      }
+    }
+    """
+    headers = {
+        "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
+        "Content-Type": "application/json"
+    }
+    variables = {
+        "projectId": project_id,
+        "contentId": issue_node_id
+    }
+    response = requests.post('https://api.github.com/graphql', headers=headers, json={'query': mutation, 'variables': variables})
+    if response.status_code == 200:
+        data = response.json()
+        item = data.get('data', {}).get('addProjectV2ItemById', {}).get('item', {})
+        if item:
+            print(f"Issue added to project. New item ID: {item['id']}")
+            return item['id']
+        else:
+            print("Failed to add issue to project.")
+    else:
+        print(f"Failed to add issue to project: {response.status_code} {response.text}")
+    return None
+
+
 def main():
     issue_details = fetch_issue_details()
     if issue_details:
         score = calculate_score_based_on_issue(issue_details)
         if score > 0:
-            item_id = fetch_item_id_for_issue("PVT_kwHOARXQmM4AnIAT", issue_details['number'])
-            if item_id:
-                update_project_field(item_id, "PVTF_lAHOARXQmM4AnIATzge6Yn8", score)
+            issue_node_id = issue_details.get('node_id')
+            if issue_node_id:
+                item_id = fetch_item_id_for_issue("PVT_kwHOARXQmM4AnIAT", issue_node_id)
+                if not item_id:
+                    print("Issue not in project. Adding issue to project.")
+                    item_id = add_issue_to_project(issue_node_id, "PVT_kwHOARXQmM4AnIAT")
+                if item_id:
+                    update_project_field(item_id, "PVTF_lAHOARXQmM4AnIATzge6Yn8", score)
+                else:
+                    print("Failed to obtain project item ID.")
             else:
-                print("No matching item found for the issue in the project.")
+                print("Issue node ID not found.")
         else:
             print("Score calculation failed due to missing or invalid data.")
 
