@@ -210,6 +210,7 @@ def add_issue_to_project(issue_node_id: str, project_id: str) -> Optional[str]:
     else:
         print(f"Failed to add issue to project: {response.status_code} {response.text}")
     return None
+
 def update_project_field(item_id: str, project_id: str, field_id: str, score: float):
     """Update the project field with the calculated score."""
     query_url = 'https://api.github.com/graphql'
