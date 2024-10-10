@@ -8,12 +8,15 @@ jobs:
   update-score:
     if: contains(github.event.label.name, 'bug')
     runs-on: ubuntu-latest
+    env:
+      PROJECT_ID: ${{ secrets.PROJECT_ID }}
+      FIELD_ID: ${{ secrets.FIELD_ID }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
@@ -25,4 +28,6 @@ jobs:
       - name: Calculate score and update project field
         env:
           GITHUB_TOKEN: ${{ secrets.PRI_MVP_CLASSIC }}
+          PROJECT_ID: ${{ env.PROJECT_ID }}
+          FIELD_ID: ${{ env.FIELD_ID }}
         run: python .github/scripts/final-mvp.py
