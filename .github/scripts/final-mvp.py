@@ -57,10 +57,10 @@ def calculate_score_based_on_issue(issue):
     
     # Calculate the total score
     total_score = (
-        score_mappings['risk'].get(risk, 1) * multipliers['risk'] +
-        score_mappings['productivity'].get(productivity, 1) * multipliers['productivity'] +
-        score_mappings['timeline'].get(timeline, 1) * multipliers['timeline'] +
-        score_mappings['dependency'].get(dependency, 1) * multipliers['dependency']
+        score_mappings['risk'].get(risk, 0) * multipliers['risk'] +
+        score_mappings['productivity'].get(productivity, 0) * multipliers['productivity'] +
+        score_mappings['timeline'].get(timeline, 0) * multipliers['timeline'] +
+        score_mappings['dependency'].get(dependency, 0) * multipliers['dependency']
     )
 
     print(f"Calculated total score: {total_score}")
@@ -69,7 +69,7 @@ def calculate_score_based_on_issue(issue):
 def extract_value_from_body(body, key):
     """
     A helper function to extract values from the given markdown-like body string.
-    Assumes the format '### key\n\nValue\n\n'
+    Assumes the format 'key\nValue'
     """
     try:
         # Split the body by lines and find the line containing the key
@@ -77,10 +77,10 @@ def extract_value_from_body(body, key):
         for i, line in enumerate(lines):
             if key in line.strip().lower():
                 # Return the value after the key line, trimming spaces and newlines
-                return lines[i + 1].strip()
+                return lines[i + 1].strip().lower()
     except Exception as e:
         print(f"Error extracting {key}: {e}")
-    return 'low'  # default if not found or on error
+    return ''  # default if not found or on error
 
 def fetch_item_id_for_issue(project_id, issue_number):
     query_url = 'https://api.github.com/graphql'
