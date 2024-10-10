@@ -56,12 +56,16 @@ def calculate_score_based_on_issue(issue):
     dependency = extract_value_from_body(body, 'how dependent is this request on eng for completion')
     
     # Calculate the total score
-    total_score = (
-        score_mappings['risk'].get(risk, 0) * multipliers['risk'] +
-        score_mappings['productivity'].get(productivity, 0) * multipliers['productivity'] +
-        score_mappings['timeline'].get(timeline, 0) * multipliers['timeline'] +
-        score_mappings['dependency'].get(dependency, 0) * multipliers['dependency']
-    )
+    try:
+        total_score = (
+            score_mappings['risk'][risk] * multipliers['risk'] +
+            score_mappings['productivity'][productivity] * multipliers['productivity'] +
+            score_mappings['timeline'][timeline] * multipliers['timeline'] +
+            score_mappings['dependency'][dependency] * multipliers['dependency']
+        )
+    except KeyError as e:
+        print(f"Error calculating score: Missing value for {e}")
+        total_score = 0
 
     print(f"Calculated total score: {total_score}")
     return total_score
