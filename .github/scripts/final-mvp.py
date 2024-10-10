@@ -50,10 +50,10 @@ def calculate_score_based_on_issue(issue):
     
     # Extract dropdown values from the issue body
     body = issue.get('body', '').lower()
-    risk = extract_value_from_body(body, 'perceived combined risk to the company reputation and revenue')
-    productivity = extract_value_from_body(body, 'what level of efficiency is gained as a result of completion')
-    timeline = extract_value_from_body(body, 'when do you need/want this request completed by')
-    dependency = extract_value_from_body(body, 'how dependent is this request on eng for completion')
+    risk = extract_value_from_body(body, 'perceived combined risk to the company reputation and revenue?')
+    productivity = extract_value_from_body(body, 'what level of efficiency is gained as a result of completion?')
+    timeline = extract_value_from_body(body, 'when do you need/want this request completed by?')
+    dependency = extract_value_from_body(body, 'how dependent is this request on eng for completion?')
     
     # Calculate the total score
     try:
