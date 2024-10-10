@@ -52,10 +52,10 @@ def calculate_score_based_on_issue(issue):
     
     # Extract dropdown values from the issue body
     body = issue.get('body', '').lower()
-    risk = extract_value_from_body(body, 'perceived combined risk to the company reputation and revenue?')
-    productivity = extract_value_from_body(body, 'what level of efficiency is gained as a result of completion?')
-    timeline = extract_value_from_body(body, 'when do you need/want this request completed by?')
-    dependency = extract_value_from_body(body, 'how dependent is this request on eng for completion?')
+    risk = extract_value_from_body(body, 'perceived combined risk to the company reputation and revenue')
+    productivity = extract_value_from_body(body, 'what level of efficiency is gained as a result of completion')
+    timeline = extract_value_from_body(body, 'when do you need/want this request completed by')
+    dependency = extract_value_from_body(body, 'how dependent is this request on eng for completion')
 
     # Log extracted values
     print(f"Extracted values - Risk: {risk}, Productivity: {productivity}, Timeline: {timeline}, Dependency: {dependency}")
@@ -79,15 +79,17 @@ def calculate_score_based_on_issue(issue):
 def extract_value_from_body(body, key):
     """
     A helper function to extract values from the given markdown-like body string.
-    Assumes the format 'key\nValue'
+    Assumes the format 'key: Value'
     """
     try:
         # Split the body by lines and find the line containing the key
         lines = body.split('\n')
-        for i, line in enumerate(lines):
+        for line in lines:
             if key in line.strip().lower():
-                # Return the value after the key line, trimming spaces and newlines
-                return lines[i + 1].strip().lower()
+                # Split the line by colon and return the value part, trimming spaces and newlines
+                parts = line.split(':', 1)
+                if len(parts) > 1:
+                    return parts[1].strip().lower()
     except Exception as e:
         print(f"Error extracting {key}: {e}")
     return ''  # default if not found or on error
