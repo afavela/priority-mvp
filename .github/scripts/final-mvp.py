@@ -205,4 +205,17 @@ def update_project_field(item_id, field_id, score):
         print(f"Failed to update project field: {response.status_code} {response.text}")
 
 def main():
-    issue_details = 
+    issue_details = fetch_issue_details()
+    if issue_details:
+        score = calculate_score_based_on_issue(issue_details)
+        if score > 0:
+            item_id = fetch_item_id_for_issue("PVT_kwHOARXQmM4AnIAT", issue_details['number'])
+            if item_id:
+                update_project_field(item_id, "PVTF_lAHOARXQmM4AnIATzge6Yn8", score)
+            else:
+                print("No matching item found for the issue in the project.")
+        else:
+            print("Score calculation failed due to missing or invalid data.")
+
+if __name__ == '__main__':
+    main()
