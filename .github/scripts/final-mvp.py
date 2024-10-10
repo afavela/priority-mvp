@@ -93,7 +93,7 @@ def calculate_score_based_on_issue(issue):
     
     # Extract dropdown values from the issue body
     body = issue.get('body', '')
-    print(f"Issue Body:\n{body}\n")
+    # Removed the print statement to avoid logging the full issue body
     q_and_a = parse_issue_body(body)
     # For debugging, print the parsed questions and answers
     print("Parsed Questions and Answers:")
