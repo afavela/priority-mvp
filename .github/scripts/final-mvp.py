@@ -2,6 +2,7 @@ import os
 import requests
 import json
 
+
 def fetch_issue_details():
     event_path = os.getenv('GITHUB_EVENT_PATH')
     with open(event_path, 'r') as file:
@@ -23,6 +24,7 @@ def fetch_issue_details():
     else:
         print(f"Failed to fetch issue details: {response.status_code} {response.text}")
         return None
+
 
 def calculate_score_based_on_issue(issue):
     # Define the score mappings and multipliers based on the image
@@ -54,7 +56,10 @@ def calculate_score_based_on_issue(issue):
     productivity = extract_value_from_body(body, 'what level of efficiency is gained as a result of completion?')
     timeline = extract_value_from_body(body, 'when do you need/want this request completed by?')
     dependency = extract_value_from_body(body, 'how dependent is this request on eng for completion?')
-    
+
+    # Log extracted values
+    print(f"Extracted values - Risk: {risk}, Productivity: {productivity}, Timeline: {timeline}, Dependency: {dependency}")
+
     # Calculate the total score
     try:
         total_score = (
@@ -69,6 +74,7 @@ def calculate_score_based_on_issue(issue):
 
     print(f"Calculated total score: {total_score}")
     return total_score
+
 
 def extract_value_from_body(body, key):
     """
@@ -85,6 +91,7 @@ def extract_value_from_body(body, key):
     except Exception as e:
         print(f"Error extracting {key}: {e}")
     return ''  # default if not found or on error
+
 
 def fetch_item_id_for_issue(project_id, issue_number):
     query_url = 'https://api.github.com/graphql'
@@ -124,6 +131,7 @@ def fetch_item_id_for_issue(project_id, issue_number):
         print(f"Failed to fetch project items: {response.status_code} {response.text}")
     return None
 
+
 def update_project_field(item_id, field_id, score):
     query_url = 'https://api.github.com/graphql'
     headers = {
@@ -153,6 +161,7 @@ def update_project_field(item_id, field_id, score):
     else:
         print(f"Failed to update project field: {response.status_code} {response.text}")
 
+
 def main():
     issue_details = fetch_issue_details()
     if issue_details:
@@ -162,6 +171,7 @@ def main():
             update_project_field(item_id, "PVTF_lAHOARXQmM4AnIATzge6Yn8", score)
         else:
             print("No matching item found for the issue in the project.")
+
 
 if __name__ == '__main__':
     main()
