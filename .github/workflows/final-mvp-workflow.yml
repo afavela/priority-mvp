@@ -2,11 +2,11 @@ name: Calculate Issue Score and Update Project Field
 
 on:
   issues:
-    types: [opened, edited]
+    types: [labeled]
 
 jobs:
   update-score:
-    if: startsWith(github.event.issue.title, 'Engineering Work Request')
+    if: contains(github.event.label.name, 'engineering-work-request')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
