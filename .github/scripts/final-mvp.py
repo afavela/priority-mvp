@@ -1,7 +1,10 @@
 import os
 import requests
 import json
+import re
 
+def normalize_string(s):
+    return s.strip().lower()
 
 def fetch_issue_details():
     event_path = os.getenv('GITHUB_EVENT_PATH')
@@ -25,21 +28,32 @@ def fetch_issue_details():
         print(f"Failed to fetch issue details: {response.status_code} {response.text}")
         return None
 
-
 def calculate_score_based_on_issue(issue):
-    # Define the score mappings and multipliers based on the image
+    # Define the score mappings and multipliers
+    def normalize_string(s):
+        return s.strip().lower()
+    
     score_mappings = {
-        "risk": {"high": 5, "medium": 3, "low": 1},
-        "productivity": {"major": 5, "minor": 3, "minimal": 1, "maintenance": 1},
+        "risk": {
+            normalize_string("High"): 5,
+            normalize_string("Medium"): 3,
+            normalize_string("Low"): 1
+        },
+        "productivity": {
+            normalize_string("Major"): 5,
+            normalize_string("Minor"): 3,
+            normalize_string("Minimal"): 1,
+            normalize_string("Maintenance"): 1
+        },
         "timeline": {
-            "immediate: within the current monthly sprint": 5,
-            "near term: within the next monthly sprint": 3,
-            "longer term: to be picked up from the backlog based on prioritization": 1
+            normalize_string("Immediate: within the current monthly sprint"): 5,
+            normalize_string("Near Term: within the next monthly sprint"): 3,
+            normalize_string("Longer Term: to be picked up from the backlog based on prioritization"): 1
         },
         "dependency": {
-            "solely dependent": 5,
-            "could be worked around but would be less efficient": 3,
-            "would be nice to have but not entirely dependent": 1
+            normalize_string("Solely Dependent"): 5,
+            normalize_string("Could be worked around but would be less efficient"): 3,
+            normalize_string("Would be nice to have but not entirely dependent"): 1
         }
     }
     
@@ -51,14 +65,19 @@ def calculate_score_based_on_issue(issue):
     }
     
     # Extract dropdown values from the issue body
-    body = issue.get('body', '').lower()
-    risk = extract_value_from_body(body, 'perceived combined risk to the company reputation and revenue')
-    productivity = extract_value_from_body(body, 'what level of efficiency is gained as a result of completion')
-    timeline = extract_value_from_body(body, 'when do you need/want this request completed by')
-    dependency = extract_value_from_body(body, 'how dependent is this request on eng for completion')
+    body = issue.get('body', '')
+    risk = normalize_string(extract_value_from_body(body, 'perceived combined risk to the company reputation and revenue'))
+    productivity = normalize_string(extract_value_from_body(body, 'what level of efficiency is gained as a result of completion'))
+    timeline = normalize_string(extract_value_from_body(body, 'when do you need/want this request completed by'))
+    dependency = normalize_string(extract_value_from_body(body, 'how dependent is this request on eng for completion'))
 
     # Log extracted values
-    print(f"Extracted values - Risk: {risk}, Productivity: {productivity}, Timeline: {timeline}, Dependency: {dependency}")
+    print(f"Extracted values - Risk: '{risk}', Productivity: '{productivity}', Timeline: '{timeline}', Dependency: '{dependency}'")
+
+    # Check if any value is missing
+    if not all([risk, productivity, timeline, dependency]):
+        print("Error: One or more required fields are missing.")
+        return 0
 
     # Calculate the total score
     try:
@@ -75,22 +94,28 @@ def calculate_score_based_on_issue(issue):
     print(f"Calculated total score: {total_score}")
     return total_score
 
-
 def extract_value_from_body(body, key):
     """
-    A helper function to extract values from the given markdown-like body string.
-    This function finds the key in the body and returns the value from the next line.
+    Extracts the answer corresponding to a question (key) in the issue body.
     """
-    try:
-        lines = body.split('\n')
-        for i, line in enumerate(lines):
-            if key in line.strip().lower():
-                if i + 1 < len(lines):
-                    return lines[i + 1].strip().lower()
-    except Exception as e:
-        print(f"Error extracting {key}: {e}")
-    return ''  # default if not found or on error
+    # Remove markdown headers and formatting
+    body = re.sub(r'^#+\s*', '', body, flags=re.MULTILINE)
+    
+    # Split the body into sections
+    sections = re.split(r'\n\n', body)
+    key = normalize_string(key)
 
+    for section in sections:
+        lines = section.strip().split('\n')
+        if lines:
+            question = normalize_string(lines[0])
+            if key in question:
+                # Return the first non-empty line after the question
+                for answer_line in lines[1:]:
+                    answer_line = answer_line.strip()
+                    if answer_line:
+                        return answer_line.lower()
+    return ''
 
 def fetch_item_id_for_issue(project_id, issue_number):
     query_url = 'https://api.github.com/graphql'
@@ -125,11 +150,12 @@ def fetch_item_id_for_issue(project_id, issue_number):
                 if 'content' in item and item['content'].get('number') == issue_number:
                     print(f"Found Item ID: {item['id']} for Issue Number: {issue_number}")
                     return item['id']
-        print("Detailed Response:", json.dumps(data, indent=4))
+            print("Detailed Response:", json.dumps(data, indent=4))
+        else:
+            print("No items found in the project.")
     else:
         print(f"Failed to fetch project items: {response.status_code} {response.text}")
     return None
-
 
 def update_project_field(item_id, field_id, score):
     query_url = 'https://api.github.com/graphql'
@@ -160,17 +186,18 @@ def update_project_field(item_id, field_id, score):
     else:
         print(f"Failed to update project field: {response.status_code} {response.text}")
 
-
 def main():
     issue_details = fetch_issue_details()
     if issue_details:
         score = calculate_score_based_on_issue(issue_details)
-        item_id = fetch_item_id_for_issue("PVT_kwHOARXQmM4AnIAT", issue_details['number'])
-        if item_id:
-            update_project_field(item_id, "PVTF_lAHOARXQmM4AnIATzge6Yn8", score)
+        if score > 0:
+            item_id = fetch_item_id_for_issue("PVT_kwHOARXQmM4AnIAT", issue_details['number'])
+            if item_id:
+                update_project_field(item_id, "PVTF_lAHOARXQmM4AnIATzge6Yn8", score)
+            else:
+                print("No matching item found for the issue in the project.")
         else:
-            print("No matching item found for the issue in the project.")
-
+            print("Score calculation failed due to missing or invalid data.")
 
 if __name__ == '__main__':
     main()
