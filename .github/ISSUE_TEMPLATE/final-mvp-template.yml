@@ -2,7 +2,7 @@
 name: "[New] Engineering Work Request"
 description: Submit an engineering work request
 title: "Engineering Work Request - [Title Here]"
-labels: ["engineering-work-request"]
+labels: ["bug"]
 body:
   - type: dropdown
     id: requestor
