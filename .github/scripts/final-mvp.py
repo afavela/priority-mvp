@@ -197,16 +197,19 @@ def add_issue_to_project(issue_node_id: str, project_id: str) -> Optional[str]:
     response = requests.post('https://api.github.com/graphql', headers=headers, json={'query': mutation, 'variables': variables})
     if response.status_code == 200:
         data = response.json()
-        item = data.get('data', {}).get('addProjectV2ItemById', {}).get('item', {})
+        if 'errors' in data:
+            print(f"GraphQL Errors: {data['errors']}")
+            return None
+        item = data.get('data', {}).get('addProjectV2ItemById', {}).get('item')
         if item:
             print(f"Issue added to project. New item ID: {item['id']}")
             return item['id']
         else:
-            print("Failed to add issue to project.")
+            print("Failed to add issue to project. No item returned.")
+            print(f"Response Data: {data}")
     else:
         print(f"Failed to add issue to project: {response.status_code} {response.text}")
     return None
-
 def update_project_field(item_id: str, project_id: str, field_id: str, score: float):
     """Update the project field with the calculated score."""
     query_url = 'https://api.github.com/graphql'
