@@ -1,73 +1,86 @@
+---
 name: "[New] Engineering Work Request"
-description: Submit an engineering work request 
+description: Submit an engineering work request
 title: "Engineering Work Request - [Title Here]"
-labels:
-  - engineering-work-request
+labels: ["engineering-work-request"]
 body:
-- type: dropdown
-  id: requestor
-  attributes:
-    label: What team is requesting this work?
-    options: 
-      - Team 1 
-      - Team 2
-      - Team 3
-      - Other - Please specify in details
-  validations:
-    required: true
-- type: dropdown
-  id: Risk
-  attributes:
-    label: "Perceived combined risk to the company reputation and revenue?"
-    options:
-      - High
-      - Medium
-      - Low
-  validations:
-    required: true
-- type: dropdown
-  id: productivity
-  attributes:
-    label: "What level of efficiency is gained as a result of completion?"
-    options:
-      - Major
-      - Minor
-      - Minimal
-      - Maintenance
-  validations:
-    required: true
-- type: dropdown
-  id: timeline
-  attributes:
-    label: "When do you need/want this request completed by?"
-    options:
-      - "Immediate: within the current monthly sprint"
-      - "Near Term: within the next monthly sprint"
-      - "Longer Term: to be picked up from the backlog based on prioritization"
-  validations: 
-    required: true
-- type: dropdown
-  id: dependency
-  attributes:
-    label: "How dependent is this request on Eng for completion?"
-    options:
-      - Solely Dependent
-      - Could be worked around but would be less efficient
-      - Would be nice to have but not entirely dependent
-  validations:
-    required: true
-- type: textarea
-  id: blocked
-  attributes:
-    label: "Please link any existing work tracking that is relevant or blocked by this issue"
-- type: textarea
-  id: details
-  attributes:
-    label: "Details of work request: To reduce the back and forth to scope the issues, please provide us with as much detail as you can for us to understand what you would like completed:"
-    description: "What you would like done, Who needs to be involve, Any known blockers we should be aware of, Additional relevant details and links, Associated deadlines"      
-- type: textarea
-  id: justification
-  attributes:
-    label: "Finally, what happens if this is not completed when expected?" 
-  validations: 
-    required: true
+  - type: dropdown
+    id: requestor
+    attributes:
+      label: "What team is requesting this work?"
+      options:
+        - "Team 1"
+        - "Team 2"
+        - "Team 3"
+        - "Other - Please specify in details"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: risk
+    attributes:
+      label: "Perceived combined risk to the company reputation and revenue?"
+      options:
+        - "High"
+        - "Medium"
+        - "Low"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: productivity
+    attributes:
+      label: "What level of efficiency is gained as a result of completion?"
+      options:
+        - "Major"
+        - "Minor"
+        - "Minimal"
+        - "Maintenance"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: timeline
+    attributes:
+      label: "When do you need/want this request completed by?"
+      options:
+        - "Immediate: within the current monthly sprint"
+        - "Near Term: within the next monthly sprint"
+        - "Longer Term: to be picked up from the backlog based on prioritization"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: dependency
+    attributes:
+      label: "How dependent is this request on Eng for completion?"
+      options:
+        - "Solely Dependent"
+        - "Could be worked around but would be less efficient"
+        - "Would be nice to have but not entirely dependent"
+    validations:
+      required: true
+
+  - type: textarea
+    id: blocked
+    attributes:
+      label: "Please link any existing work tracking that is relevant or blocked by this issue"
+
+  - type: textarea
+    id: details
+    attributes:
+      label: "Details of work request: To reduce the back and forth to scope the issues, please provide us with as much detail as you can for us to understand what you would like completed:"
+      description: |
+        - What you would like done
+        - Who needs to be involved
+        - Any known blockers we should be aware of
+        - Additional relevant details and links
+        - Associated deadlines
+
+  - type: textarea
+    id: justification
+    attributes:
+      label: "Finally, what happens if this is not completed when expected?"
+    validations:
+      required: true
+---
