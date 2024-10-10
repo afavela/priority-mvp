@@ -1,6 +1,7 @@
 import os
 import requests
 import json
+import re
 
 
 def fetch_issue_details():
@@ -79,17 +80,14 @@ def calculate_score_based_on_issue(issue):
 def extract_value_from_body(body, key):
     """
     A helper function to extract values from the given markdown-like body string.
-    Assumes the format 'key: Value'
+    Uses a more flexible matching approach to handle slight variations in formatting.
     """
     try:
-        # Split the body by lines and find the line containing the key
-        lines = body.split('\n')
-        for line in lines:
-            if key in line.strip().lower():
-                # Split the line by colon and return the value part, trimming spaces and newlines
-                parts = line.split(':', 1)
-                if len(parts) > 1:
-                    return parts[1].strip().lower()
+        # Use regex to find the key and capture the value following it
+        pattern = rf"{key}.*?:\s*(.*)"
+        match = re.search(pattern, body, re.IGNORECASE)
+        if match:
+            return match.group(1).strip().lower()
     except Exception as e:
         print(f"Error extracting {key}: {e}")
     return ''  # default if not found or on error
