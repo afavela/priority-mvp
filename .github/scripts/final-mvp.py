@@ -93,13 +93,8 @@ def calculate_score_based_on_issue(issue):
     
     # Extract dropdown values from the issue body
     body = issue.get('body', '')
-    # Removed the print statement to avoid logging the full issue body
     q_and_a = parse_issue_body(body)
-    # For debugging, print the parsed questions and answers
-    print("Parsed Questions and Answers:")
-    for question, answer in q_and_a.items():
-        print(f"Question: {question}\nAnswer: {answer}\n")
-
+    
     # Map the questions to the keys
     key_mapping = {
         "risk": "Perceived combined risk to the company reputation and revenue?",
@@ -112,9 +107,6 @@ def calculate_score_based_on_issue(issue):
     productivity = normalize_string(q_and_a.get(key_mapping['productivity'], ''))
     timeline = normalize_string(q_and_a.get(key_mapping['timeline'], ''))
     dependency = normalize_string(q_and_a.get(key_mapping['dependency'], ''))
-
-    # Log extracted values
-    print(f"Extracted values - Risk: '{risk}', Productivity: '{productivity}', Timeline: '{timeline}', Dependency: '{dependency}'")
 
     # Check if any value is missing
     if not all([risk, productivity, timeline, dependency]):
@@ -169,7 +161,8 @@ def fetch_item_id_for_issue(project_id, issue_number):
                 if 'content' in item and item['content'].get('number') == issue_number:
                     print(f"Found Item ID: {item['id']} for Issue Number: {issue_number}")
                     return item['id']
-            print("Detailed Response:", json.dumps(data, indent=4))
+            # Uncomment the next line if you want to see detailed response when item is not found
+            # print("Detailed Response:", json.dumps(data, indent=4))
         else:
             print("No items found in the project.")
     else:
