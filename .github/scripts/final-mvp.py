@@ -1,22 +1,36 @@
 import os
 import requests
 import json
+from typing import Optional, Dict
 
-def normalize_string(s):
+def normalize_string(s: str) -> str:
+    """Normalize a string by stripping whitespace and converting to lowercase."""
     return s.strip().lower()
 
-def fetch_issue_details():
+def fetch_issue_details() -> Optional[Dict]:
+    """Fetch issue details from the GitHub event data."""
     event_path = os.getenv('GITHUB_EVENT_PATH')
-    with open(event_path, 'r') as file:
-        event_data = json.load(file)
-    
-    issue_url = event_data['issue']['url']
-    
+    if not event_path:
+        print("Error: GITHUB_EVENT_PATH environment variable is not set.")
+        return None
+
+    try:
+        with open(event_path, 'r') as file:
+            event_data = json.load(file)
+    except Exception as e:
+        print(f"Error reading event data: {e}")
+        return None
+
+    issue_url = event_data.get('issue', {}).get('url')
+    if not issue_url:
+        print("Error: Issue URL not found in event data.")
+        return None
+
     headers = {
         "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
         "Accept": "application/vnd.github+json"
     }
-    
+
     response = requests.get(issue_url, headers=headers)
     if response.status_code == 200:
         issue = response.json()
@@ -27,10 +41,8 @@ def fetch_issue_details():
         print(f"Failed to fetch issue details: {response.status_code} {response.text}")
         return None
 
-def parse_issue_body(body):
-    """
-    Parses the issue body into a dictionary of questions and answers.
-    """
+def parse_issue_body(body: str) -> Dict[str, str]:
+    """Parse the issue body into a dictionary of questions and answers."""
     lines = body.split('\n')
     q_and_a = {}
     current_question = None
@@ -40,11 +52,8 @@ def parse_issue_body(body):
         if not line:
             i += 1
             continue
-        # If the line starts with '### ', consider it a question
         if line.startswith('### '):
-            # Remove '### ' and any leading '#' characters from the question
             current_question = line.lstrip('#').strip()
-            # Collect the answer from the next non-empty line
             answer = ''
             i += 1
             while i < len(lines):
@@ -58,7 +67,8 @@ def parse_issue_body(body):
             i += 1
     return q_and_a
 
-def calculate_score_based_on_issue(issue):
+def calculate_score_based_on_issue(issue: Dict) -> float:
+    """Calculate the priority score based on issue responses."""
     # Define the score mappings and multipliers
     score_mappings = {
         "risk": {
@@ -83,18 +93,18 @@ def calculate_score_based_on_issue(issue):
             normalize_string("Would be nice to have but not entirely dependent"): 1
         }
     }
-    
+
     multipliers = {
         "risk": 0.3,
         "productivity": 0.3,
         "timeline": 0.2,
         "dependency": 0.2
     }
-    
+
     # Extract dropdown values from the issue body
     body = issue.get('body', '')
     q_and_a = parse_issue_body(body)
-    
+
     # Map the questions to the keys
     key_mapping = {
         "risk": "Perceived combined risk to the company reputation and revenue?",
@@ -111,7 +121,7 @@ def calculate_score_based_on_issue(issue):
     # Check if any value is missing
     if not all([risk, productivity, timeline, dependency]):
         print("Error: One or more required fields are missing.")
-        return 0
+        return 0.0
 
     # Calculate the total score
     try:
@@ -123,28 +133,27 @@ def calculate_score_based_on_issue(issue):
         )
     except KeyError as e:
         print(f"Error calculating score: Missing value for {e}")
-        total_score = 0
+        total_score = 0.0
 
     print(f"Calculated total score: {total_score}")
     return total_score
 
-def fetch_item_id_for_issue(project_id, issue_number):
+def fetch_item_id_for_issue(project_id: str, issue_node_id: str) -> Optional[str]:
+    """Fetch the project item ID for the given issue in the specified project."""
     query_url = 'https://api.github.com/graphql'
     headers = {
         "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
         "Content-Type": "application/json"
     }
     query = """
-    query GetProjectItems($projectId: ID!) {
-      node(id: $projectId) {
-        ... on ProjectV2 {
-          items(first: 100) {
+    query GetIssueProjectItems($issueId: ID!) {
+      node(id: $issueId) {
+        ... on Issue {
+          projectItems(first: 10) {
             nodes {
               id
-              content {
-                ... on Issue {
-                  number
-                }
+              project {
+                id
               }
             }
           }
@@ -152,53 +161,22 @@ def fetch_item_id_for_issue(project_id, issue_number):
       }
     }
     """
-    variables = {"projectId": project_id}
+    variables = {"issueId": issue_node_id}
     response = requests.post(query_url, headers=headers, json={'query': query, 'variables': variables})
     if response.status_code == 200:
         data = response.json()
-        if data.get('data') and data['data'].get('node') and data['data']['node'].get('items'):
-            for item in data['data']['node']['items']['nodes']:
-                if 'content' in item and item['content'].get('number') == issue_number:
-                    print(f"Found Item ID: {item['id']} for Issue Number: {issue_number}")
-                    return item['id']
-            # Uncomment the next line if you want to see detailed response when item is not found
-            # print("Detailed Response:", json.dumps(data, indent=4))
-        else:
-            print("No items found in the project.")
+        items = data.get('data', {}).get('node', {}).get('projectItems', {}).get('nodes', [])
+        for item in items:
+            if item.get('project', {}).get('id') == project_id:
+                print(f"Found Item ID: {item['id']} for Issue ID: {issue_node_id}")
+                return item['id']
+        print(f"No matching project item found for Issue ID: {issue_node_id} in project {project_id}.")
     else:
-        print(f"Failed to fetch project items: {response.status_code} {response.text}")
+        print(f"Failed to fetch issue project items: {response.status_code} {response.text}")
     return None
 
-def update_project_field(item_id, field_id, score):
-    query_url = 'https://api.github.com/graphql'
-    headers = {
-        "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
-        "Content-Type": "application/json"
-    }
-    query = """
-    mutation ($input: UpdateProjectV2ItemFieldValueInput!) {
-      updateProjectV2ItemFieldValue(input: $input) {
-        clientMutationId
-      }
-    }
-    """
-    # Ensure score is passed as a floating-point number
-    formatted_score = {"number": round(score, 2)}  # Round to two decimal places if needed
-    variables = {
-        "input": {
-            "projectId": "PVT_kwHOARXQmM4AnIAT",
-            "fieldId": field_id,
-            "value": formatted_score,
-            "itemId": item_id
-        }
-    }
-    response = requests.post(query_url, headers=headers, json={'query': query, 'variables': variables})
-    if response.status_code == 200:
-        print(f"Field updated successfully for Item ID: {item_id}, Score set: {formatted_score}")
-    else:
-        print(f"Failed to update project field: {response.status_code} {response.text}")
-
-def add_issue_to_project(issue_node_id, project_id):
+def add_issue_to_project(issue_node_id: str, project_id: str) -> Optional[str]:
+    """Add an issue to the specified project and return the new project item ID."""
     mutation = """
     mutation AddIssueToProject($projectId: ID!, $contentId: ID!) {
       addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
@@ -229,20 +207,54 @@ def add_issue_to_project(issue_node_id, project_id):
         print(f"Failed to add issue to project: {response.status_code} {response.text}")
     return None
 
+def update_project_field(item_id: str, project_id: str, field_id: str, score: float):
+    """Update the project field with the calculated score."""
+    query_url = 'https://api.github.com/graphql'
+    headers = {
+        "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
+        "Content-Type": "application/json"
+    }
+    query = """
+    mutation ($input: UpdateProjectV2ItemFieldValueInput!) {
+      updateProjectV2ItemFieldValue(input: $input) {
+        clientMutationId
+      }
+    }
+    """
+    formatted_score = {"number": round(score, 2)}  # Round to two decimal places if needed
+    variables = {
+        "input": {
+            "projectId": project_id,
+            "fieldId": field_id,
+            "value": formatted_score,
+            "itemId": item_id
+        }
+    }
+    response = requests.post(query_url, headers=headers, json={'query': query, 'variables': variables})
+    if response.status_code == 200:
+        print(f"Field updated successfully for Item ID: {item_id}, Score set: {formatted_score}")
+    else:
+        print(f"Failed to update project field: {response.status_code} {response.text}")
 
 def main():
+    project_id = os.getenv('PROJECT_ID')
+    field_id = os.getenv('FIELD_ID')
+    if not project_id or not field_id:
+        print("Error: PROJECT_ID and FIELD_ID environment variables must be set.")
+        return
+
     issue_details = fetch_issue_details()
     if issue_details:
         score = calculate_score_based_on_issue(issue_details)
         if score > 0:
             issue_node_id = issue_details.get('node_id')
             if issue_node_id:
-                item_id = fetch_item_id_for_issue("PVT_kwHOARXQmM4AnIAT", issue_node_id)
+                item_id = fetch_item_id_for_issue(project_id, issue_node_id)
                 if not item_id:
                     print("Issue not in project. Adding issue to project.")
-                    item_id = add_issue_to_project(issue_node_id, "PVT_kwHOARXQmM4AnIAT")
+                    item_id = add_issue_to_project(issue_node_id, project_id)
                 if item_id:
-                    update_project_field(item_id, "PVTF_lAHOARXQmM4AnIATzge6Yn8", score)
+                    update_project_field(item_id, project_id, field_id, score)
                 else:
                     print("Failed to obtain project item ID.")
             else:
