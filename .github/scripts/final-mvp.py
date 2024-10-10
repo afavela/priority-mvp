@@ -24,40 +24,47 @@ def fetch_issue_details():
         print(f"Failed to fetch issue details: {response.status_code} {response.text}")
         return None
 
-import json
-
 def calculate_score_based_on_issue(issue):
-    # Maps for severity and business impact with lowercase keys
-    severity_scores = {
-        "low": 1,
-        "medium": 2,
-        "high": 3,
-        "critical": 4
+    # Define the score mappings and multipliers based on the image
+    score_mappings = {
+        "risk": {"High": 5, "Medium": 3, "Low": 1},
+        "productivity": {"Major": 5, "Minor": 3, "Minimal": 1, "Maintenance": 1},
+        "timeline": {
+            "Immediate: within the current monthly sprint": 5,
+            "Near Term: within the next monthly sprint": 3,
+            "Longer Term: to be picked up from the backlog based on prioritization": 1
+        },
+        "dependency": {
+            "Solely Dependent": 5,
+            "Could be worked around but would be less efficient": 3,
+            "Would be nice to have but not entirely dependent": 1
+        }
     }
-    impact_scores = {
-        "low": 1,
-        "medium": 2,
-        "high": 3,
-        "critical": 4
+    
+    multipliers = {
+        "risk": 0.3,
+        "productivity": 0.3,
+        "timeline": 0.2,
+        "dependency": 0.2
     }
-
-    # Extract the severity and impact from the issue body string
+    
+    # Extract dropdown values from the issue body
     body = issue.get('body', '').lower()
-    severity = extract_value_from_body(body, 'severity')
-    impact = extract_value_from_body(body, 'impact')
+    risk = extract_value_from_body(body, 'risk')
+    productivity = extract_value_from_body(body, 'productivity')
+    timeline = extract_value_from_body(body, 'timeline')
+    dependency = extract_value_from_body(body, 'dependency')
+    
+    # Calculate the total score
+    total_score = (
+        score_mappings['risk'].get(risk, 1) * multipliers['risk'] +
+        score_mappings['productivity'].get(productivity, 1) * multipliers['productivity'] +
+        score_mappings['timeline'].get(timeline, 1) * multipliers['timeline'] +
+        score_mappings['dependency'].get(dependency, 1) * multipliers['dependency']
+    )
 
-    # Calculate the scores using the dictionaries
-    severity_score = severity_scores.get(severity, 1)  # Default to 1 if not found
-    impact_score = impact_scores.get(impact, 1)  # Default to 1 if not found
-
-    # Calculate average score and ensure it's an integer for GraphQL compatibility
-    average_score = (severity_score + impact_score) / 2
-
-    print(f"Extracted Severity: {severity}, Severity Score: {severity_score}")
-    print(f"Extracted Impact: {impact}, Impact Score: {impact_score}")
-    print(f"Calculated average score: {average_score}")
-
-    return average_score
+    print(f"Calculated total score: {total_score}")
+    return total_score
 
 def extract_value_from_body(body, key):
     """
@@ -74,10 +81,6 @@ def extract_value_from_body(body, key):
     except Exception as e:
         print(f"Error extracting {key}: {e}")
     return 'low'  # default if not found or on error
-
-
-
-
 
 def fetch_item_id_for_issue(project_id, issue_number):
     query_url = 'https://api.github.com/graphql'
