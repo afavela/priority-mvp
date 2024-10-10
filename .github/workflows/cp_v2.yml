@@ -1,27 +1,27 @@
-name: Calculate Issue Score and Update Project Field
+# name: Calculate Issue Score and Update Project Field
 
-on:
-  issues:
-    types: [opened, edited]
+# on:
+#   issues:
+#     types: [opened, edited]
 
-jobs:
-  update-score:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+# jobs:
+#   update-score:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
+#       - name: Set up Python
+#         uses: actions/setup-python@v2
+#         with:
+#           python-version: '3.x'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests
+#       - name: Install dependencies
+#         run: |
+#           python -m pip install --upgrade pip
+#           pip install requests
 
-      - name: Calculate score and update project field
-        env:
-          GITHUB_TOKEN: ${{ secrets.PRI_MVP_CLASSIC }}
-        run: python .github/scripts/update_score.py
+#       - name: Calculate score and update project field
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.PRI_MVP_CLASSIC }}
+#         run: python .github/scripts/update_score.py
